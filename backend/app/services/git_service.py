@@ -5,8 +5,12 @@ from git import Repo
 
 class GitService:
 
-    def clone_repository(self, repository_url: str):
-        project_id = str(uuid.uuid4())
+    def clone_repository(
+        self,
+        repository_url: str,
+        project_id: str | None = None,
+    ):
+        project_id = project_id or str(uuid.uuid4())
         workspace = os.path.join("workspaces", project_id)
 
         os.makedirs(workspace, exist_ok=True)

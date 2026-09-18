@@ -16,93 +16,200 @@ class FrameworkDetectorService:
 
     def detect(self, workspace: str):
 
-        detected_frameworks = []
-
-        # --------------------------------------------------
-        # Check Python project
-        # --------------------------------------------------
-
-        requirements_path = os.path.join(
-            workspace,
-            "requirements.txt"
-        )
-
-        pyproject_path = os.path.join(
-            workspace,
-            "pyproject.toml"
-        )
-
-        if os.path.exists(requirements_path) or os.path.exists(pyproject_path):
-
-            requirements = ""
-
-            if os.path.exists(requirements_path):
-                with open(
-                    requirements_path,
-                    "r",
-                    encoding="utf-8"
-                ) as file:
-                    requirements = file.read().lower()
-
-            if "fastapi" in requirements:
-                detected_frameworks.append("FastAPI")
-
-            elif "flask" in requirements:
-                detected_frameworks.append("Flask")
-
-            elif "django" in requirements:
-                detected_frameworks.append("Django")
-
-            else:
-                detected_frameworks.append("Python")
-
-        # --------------------------------------------------
-        # Check Node.js / JavaScript project
-        # --------------------------------------------------
-
-        package_path = os.path.join(
-            workspace,
-            "package.json"
-        )
-
-        if os.path.exists(package_path):
-
-            with open(
-                package_path,
-                "r",
-                encoding="utf-8"
-            ) as file:
-                package_data = json.load(file)
-
-            dependencies = {}
-
-            dependencies.update(
-                package_data.get("dependencies", {})
-            )
-
-            dependencies.update(
-                package_data.get("devDependencies", {})
-            )
-
-            dependency_names = {
-                name.lower()
-                for name in dependencies.keys()
+        if not os.path.exists(workspace):
+            return {
+                "error": "Workspace not found",
+                "workspace": workspace,
+                "frameworks": []
             }
 
-            if "next" in dependency_names:
-                detected_frameworks.append("Next.js")
+        detected_frameworks = []
+        dependency_files = []
 
-            elif "react" in dependency_names:
-                detected_frameworks.append("React")
+        # --------------------------------------------------
+        # Find dependency files anywhere in the project
+        # --------------------------------------------------
 
-            elif "vue" in dependency_names:
-                detected_frameworks.append("Vue")
+        for root, dirs, files in os.walk(workspace):
 
-            elif "express" in dependency_names:
-                detected_frameworks.append("Express")
+            dirs[:] = [
+                directory
+                for directory in dirs
+                if directory not in self.EXCLUDED_DIRECTORIES
+            ]
 
-            else:
-                detected_frameworks.append("Node.js")
+            for filename in files:
+
+                if filename in {
+                    "requirements.txt",
+                    "pyproject.toml",
+                    "package.json"
+                }:
+                    dependency_files.append(
+                        os.path.join(root, filename)
+                    )
+
+        # --------------------------------------------------
+        # Analyze dependency files
+        # --------------------------------------------------
+
+        for dependency_file in dependency_files:
+
+            filename = os.path.basename(
+                dependency_file
+            ).lower()
+
+            # ----------------------------------------------
+            # Python requirements.txt
+            # ----------------------------------------------
+
+            if filename == "requirements.txt":
+
+                try:
+
+                    with open(
+                        dependency_file,
+                        "r",
+                        encoding="utf-8"
+                    ) as file:
+                        content = file.read().lower()
+
+                    if "fastapi" in content:
+                        detected_frameworks.append(
+                            "FastAPI"
+                        )
+
+                    if "flask" in content:
+                        detected_frameworks.append(
+                            "Flask"
+                        )
+
+                    if "django" in content:
+                        detected_frameworks.append(
+                            "Django"
+                        )
+
+                    if (
+                        "fastapi" not in content
+                        and
+                        "flask" not in content
+                        and
+                        "django" not in content
+                    ):
+                        detected_frameworks.append(
+                            "Python"
+                        )
+
+                except Exception:
+                    pass
+
+            # ----------------------------------------------
+            # Python pyproject.toml
+            # ----------------------------------------------
+
+            elif filename == "pyproject.toml":
+
+                try:
+
+                    with open(
+                        dependency_file,
+                        "r",
+                        encoding="utf-8"
+                    ) as file:
+                        content = file.read().lower()
+
+                    if "fastapi" in content:
+                        detected_frameworks.append(
+                            "FastAPI"
+                        )
+
+                    if "flask" in content:
+                        detected_frameworks.append(
+                            "Flask"
+                        )
+
+                    if "django" in content:
+                        detected_frameworks.append(
+                            "Django"
+                        )
+
+                    if (
+                        "fastapi" not in content
+                        and
+                        "flask" not in content
+                        and
+                        "django" not in content
+                    ):
+                        detected_frameworks.append(
+                            "Python"
+                        )
+
+                except Exception:
+                    pass
+
+            # ----------------------------------------------
+            # Node.js package.json
+            # ----------------------------------------------
+
+            elif filename == "package.json":
+
+                try:
+
+                    with open(
+                        dependency_file,
+                        "r",
+                        encoding="utf-8"
+                    ) as file:
+                        package_data = json.load(file)
+
+                    dependencies = {}
+
+                    dependencies.update(
+                        package_data.get(
+                            "dependencies",
+                            {}
+                        )
+                    )
+
+                    dependencies.update(
+                        package_data.get(
+                            "devDependencies",
+                            {}
+                        )
+                    )
+
+                    dependency_names = {
+                        name.lower()
+                        for name in dependencies.keys()
+                    }
+
+                    if "next" in dependency_names:
+                        detected_frameworks.append(
+                            "Next.js"
+                        )
+
+                    elif "react" in dependency_names:
+                        detected_frameworks.append(
+                            "React"
+                        )
+
+                    elif "vue" in dependency_names:
+                        detected_frameworks.append(
+                            "Vue"
+                        )
+
+                    elif "express" in dependency_names:
+                        detected_frameworks.append(
+                            "Express"
+                        )
+
+                    else:
+                        detected_frameworks.append(
+                            "Node.js"
+                        )
+
+                except Exception:
+                    pass
 
         # --------------------------------------------------
         # Remove duplicates
@@ -112,6 +219,17 @@ class FrameworkDetectorService:
             dict.fromkeys(detected_frameworks)
         )
 
+        # --------------------------------------------------
+        # Return result
+        # --------------------------------------------------
+
         return {
-            "frameworks": detected_frameworks
+            "frameworks": detected_frameworks,
+            "dependency_files": [
+                os.path.relpath(
+                    path,
+                    workspace
+                )
+                for path in dependency_files
+            ]
         }

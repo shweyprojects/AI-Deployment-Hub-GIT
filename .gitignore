@@ -14,3 +14,10 @@ generated/
 .idea/
 
 *.log
+node_modules/
+dist/
+
+
+*.egg-info/
+.pytest_cache/
+.coverage
